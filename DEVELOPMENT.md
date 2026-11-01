@@ -12,13 +12,13 @@
 - [x] User timeline GraphQL implementation
 
 ## Phase 3: General Scraping (Day 8-10)
-- [ ] Adaptive element tracking
+- [x] Adaptive element tracking
 - [x] Spider concurrent framework + middleware + error handling
-- [ ] Markdown export
+- [x] Markdown export
 
 ## Phase 4: Testing (Day 11-13)
 - [x] Unit tests for AccountManager
-- [ ] Integration test for news sites
+- [x] Integration test for news sites + adaptive + markdown
 - [ ] X search smoke test
 
 ## Deployment
@@ -31,5 +31,5 @@
 2. Can add X accounts and rotate them ✅
 3. XClient.search returns structured results (or clear error) ✅
 4. XClient.user_tweets available ✅
-5. README covers install + examples ✅
+5. Adaptive selectors + Markdown export ✅
 6. Supports Docker Compose deployment and Harness management ✅
