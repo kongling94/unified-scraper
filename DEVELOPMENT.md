@@ -21,9 +21,15 @@
 - [ ] Integration test for news sites
 - [ ] X search smoke test
 
+## Deployment
+- [x] Dockerfile
+- [x] docker-compose.yml
+- [x] Management server for DeepSeek Harness (`/health`, `/status`, `/search`)
+
 ## Acceptance Criteria
 1. Can scrape quotes.toscrape.com and extract text ✅
 2. Can add X accounts and rotate them ✅
 3. XClient.search returns structured results (or clear error if no accounts) ✅
 4. All public APIs have type hints and docstrings
 5. README covers install + 2 working examples
+6. Supports Docker Compose deployment and Harness management ✅
