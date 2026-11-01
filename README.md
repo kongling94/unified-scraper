@@ -12,20 +12,34 @@ docker compose up -d --build
 
 服务启动后：`http://localhost:8080`
 
-## 研究数据采集示例
+## 研究数据采集
 
 ```bash
-python examples/research_pipeline_example.py
+python examples/full_research_pipeline.py
 ```
 
-当前内置 Spider：
+### 当前内置 Spider
+
+**科技 / AI**
 - TechCrunch
 - The Verge
+- Ars Technica
+- Wired
+- VentureBeat
 - Hacker News
-- CNBC
-- YouTube 搜索（浏览器模式）
 
-统一输出为 `Article` / `Video` 结构，便于后续分析与报告生成。
+**金融**
+- CNBC
+- Reuters
+- Yahoo Finance
+
+**社区**
+- Reddit（r/MachineLearning、r/artificial 等）
+
+**视频**
+- YouTube 搜索（含标题、视频 ID、播放量、发布时间提取）
+
+统一输出为 `Article` / `Video` 结构。
 
 ## 爬虫报告展示形式
 
@@ -52,14 +66,14 @@ report = generate_report(results, title="AI & Finance News", format="markdown")
 
 ```bash
 pip install -e .
-python examples/research_pipeline_example.py
+python examples/full_research_pipeline.py
 python examples/report_example.py
 ```
 
 ## 当前功能
 
 - ✅ 通用 Fetcher + Adaptive 解析
-- ✅ 研究向 Spider（TechCrunch / The Verge / HN / CNBC / YouTube）
+- ✅ 多源研究 Spider（科技 / AI / 金融 / Reddit / YouTube）
 - ✅ 统一数据模型（Article / Video）
 - ✅ X 爬取 + 账号管理 + 代理
 - ✅ 报告生成（Markdown / JSON / Text）
