@@ -5,6 +5,11 @@ import json
 import asyncio
 from .accounts import AccountManager
 from .x import XClient
+from .utils import generate_report
+from .spiders import (
+    TechCrunchSpider, TheVergeSpider, HackerNewsSpider,
+    CoinDeskSpider, RedditSpider, YouTubeSearchSpider,
+)
 
 account_manager = AccountManager("/app/accounts.db")
 x_client = XClient(account_manager)
@@ -17,7 +22,7 @@ class Handler(BaseHTTPRequestHandler):
             accounts = account_manager.list_accounts()
             self._json(200, {
                 "accounts_count": len(accounts),
-                "endpoints": ["/health", "/status", "/search", "/accounts", "/accounts/add"]
+                "endpoints": ["/health", "/status", "/search", "/accounts", "/report"]
             })
         elif self.path == "/accounts":
             accounts = account_manager.list_accounts()
@@ -44,6 +49,36 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"query": query, "results": results, "status": "success"})
             except Exception as e:
                 self._json(500, {"error": str(e), "query": query})
+
+        elif self.path == "/report":
+            sources = data.get("sources", ["techcrunch", "hn"])
+            fmt = data.get("format", "markdown")
+            title = data.get("title", "Research Report")
+            items = []
+            spider_map = {
+                "techcrunch": TechCrunchSpider,
+                "verge": TheVergeSpider,
+                "hn": HackerNewsSpider,
+                "coindesk": CoinDeskSpider,
+                "reddit_ml": lambda: RedditSpider("MachineLearning"),
+                "youtube": lambda: YouTubeSearchSpider(data.get("query", "AI"), 5),
+            }
+            for src in sources:
+                try:
+                    cls = spider_map.get(src)
+                    if not cls:
+                        continue
+                    spider = cls() if not callable(cls) else cls()
+                    items.extend(spider.start())
+                except Exception:
+                    continue
+            report = generate_report(items, title=title, format=fmt)
+            self._json(200, {
+                "status": "success",
+                "count": len(items),
+                "format": fmt,
+                "report": report,
+            })
 
         elif self.path == "/accounts/add":
             username = data.get("username")
@@ -85,7 +120,7 @@ class Handler(BaseHTTPRequestHandler):
 def run(port=8080):
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Management server running on http://0.0.0.0:{port}")
-    print("Endpoints: /health /status /accounts /search /accounts/add /accounts/lock /accounts/unlock")
+    print("Endpoints: /health /status /accounts /search /report /accounts/add ...")
     server.serve_forever()
 
 if __name__ == "__main__":
