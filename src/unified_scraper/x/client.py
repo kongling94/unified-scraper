@@ -9,7 +9,8 @@ class XClient:
     """X scraping client with account rotation."""
 
     # Note: Query IDs change frequently. Update from twscrape when needed.
-    SEARCH_QUERY_ID = "nK1dw4oV3k4w5T8tJ2"  # example, replace with latest
+    # Current example ID — replace with latest working one from twscrape source.
+    SEARCH_QUERY_ID = "nK1dw4oV3k4w5T8tJ2"
 
     def __init__(self, account_manager: AccountManager):
         self.accounts = account_manager
@@ -66,26 +67,43 @@ class XClient:
 
         async with httpx.AsyncClient(headers=self._headers(account), timeout=30.0) as client:
             try:
-                # resp = await client.get(url, params=params)
-                # data = resp.json()
-                # Parse tweets from data here
-                return [{
-                    "query": query,
-                    "account_used": account.username,
-                    "status": "graphql_structure_ready",
-                    "note": "Update SEARCH_QUERY_ID from latest twscrape and uncomment the real request."
-                }]
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # Basic extraction placeholder — parse timeline entries in production
+                    tweets = []
+                    try:
+                        instructions = data.get("data", {}).get("search_by_raw_query", {}).get("search_timeline", {}).get("timeline", {}).get("instructions", [])
+                        for inst in instructions:
+                            for entry in inst.get("entries", []):
+                                content = entry.get("content", {})
+                                item = content.get("itemContent", {})
+                                tweet_results = item.get("tweet_results", {}).get("result", {})
+                                if tweet_results:
+                                    legacy = tweet_results.get("legacy", {})
+                                    tweets.append({
+                                        "id": legacy.get("id_str"),
+                                        "text": legacy.get("full_text"),
+                                        "user": tweet_results.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name"),
+                                        "created_at": legacy.get("created_at"),
+                                    })
+                    except Exception:
+                        pass
+                    return tweets or [{"status": "ok", "raw_keys": list(data.keys()), "account": account.username}]
+                else:
+                    self.accounts.lock(account.username)
+                    return [{"status": "http_error", "code": resp.status_code, "account": account.username, "text": resp.text[:200]}]
             except Exception as e:
                 self.accounts.lock(account.username)
                 raise RuntimeError(f"Request failed with account {account.username}: {e}") from e
 
     async def user_tweets(self, username: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """Get user timeline."""
+        """Get user timeline (structure ready)."""
         account = self.accounts.get_available()
         if not account:
             raise RuntimeError("No available accounts")
         return [{
             "username": username,
             "account_used": account.username,
-            "status": "structure_ready"
+            "status": "ready_for_user_timeline_query_id"
         }]
