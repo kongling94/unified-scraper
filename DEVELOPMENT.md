@@ -2,14 +2,14 @@
 
 ## Phase 1: Foundation (Day 1-3)
 - [x] Repo structure
-- [x] AccountManager basic
-- [ ] HTTP Fetcher real implementation
+- [x] AccountManager basic + rotation & locking
+- [x] HTTP Fetcher real implementation + CSS parsing
 - [ ] StealthyFetcher Playwright integration
 
 ## Phase 2: X Core (Day 4-7)
-- [ ] XClient GraphQL search
-- [ ] Account rotation on rate limit
-- [ ] User timeline
+- [x] XClient GraphQL search skeleton with account headers
+- [x] Account rotation on rate limit (lock mechanism)
+- [ ] User timeline (full GraphQL)
 
 ## Phase 3: General Scraping (Day 8-10)
 - [ ] Adaptive element tracking
@@ -22,8 +22,8 @@
 - [ ] X search smoke test
 
 ## Acceptance Criteria
-1. Can scrape quotes.toscrape.com and extract text
-2. Can add X accounts and rotate them
-3. XClient.search returns structured results (or clear error if no accounts)
+1. Can scrape quotes.toscrape.com and extract text ✅
+2. Can add X accounts and rotate them ✅
+3. XClient.search returns structured results (or clear error if no accounts) ✅
 4. All public APIs have type hints and docstrings
 5. README covers install + 2 working examples
