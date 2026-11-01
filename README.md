@@ -18,7 +18,7 @@ docker compose up -d --build
 | GET | `/status` | 服务状态 |
 | GET | `/accounts` | 查看账号列表 |
 | POST | `/search` | X 搜索 `{"query":"AI","limit":10}` |
-| POST | `/accounts/add` | 添加账号 `{"username":"","auth_token":"","ct0":""}` |
+| POST | `/accounts/add` | 添加账号 `{"username":"","auth_token":"","ct0":"","proxy":""}` |
 | POST | `/accounts/lock` | 锁定账号 |
 | POST | `/accounts/unlock` | 解锁账号 |
 
@@ -27,7 +27,7 @@ docker compose up -d --build
 curl http://localhost:8080/health
 curl -X POST http://localhost:8080/accounts/add \
   -H "Content-Type: application/json" \
-  -d '{"username":"u1","auth_token":"xxx","ct0":"yyy"}'
+  -d '{"username":"u1","auth_token":"xxx","ct0":"yyy","proxy":"http://proxy:8080"}'
 curl -X POST http://localhost:8080/search \
   -H "Content-Type: application/json" \
   -d '{"query":"AI"}'
@@ -38,6 +38,7 @@ curl -X POST http://localhost:8080/search \
 ```bash
 pip install -e .
 python examples/basic_usage.py
+python examples/proxy_example.py
 python examples/spider_example.py
 python examples/user_timeline_example.py
 python examples/adaptive_markdown_example.py
@@ -48,11 +49,11 @@ python -m pytest tests/ -q
 
 - ✅ HTTP Fetcher + CSS 解析 + Adaptive 元素追踪
 - ✅ StealthyFetcher（Playwright）
-- ✅ AccountManager 轮换 + 锁定 + API
-- ✅ XClient 搜索 + User Timeline GraphQL
+- ✅ AccountManager 轮换 + 锁定 + 代理 + API
+- ✅ XClient 搜索 + User Timeline（富解析 + 代理）
 - ✅ Spider 并发爬取 + 中间件 + 错误处理
 - ✅ Markdown 导出
 - ✅ Docker Compose + 完整管理 API
-- ✅ 单元测试 + 集成测试
+- ✅ 单元测试 + 集成测试 + X 冒烟测试
 
 详细进度见 `DEVELOPMENT.md`。
