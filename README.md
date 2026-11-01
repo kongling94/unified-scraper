@@ -41,6 +41,7 @@ python examples/basic_usage.py
 python examples/proxy_example.py
 python examples/spider_example.py
 python examples/user_timeline_example.py
+python examples/user_id_and_endpoints_example.py
 python examples/adaptive_markdown_example.py
 python -m pytest tests/ -q
 ```
@@ -50,7 +51,8 @@ python -m pytest tests/ -q
 - ✅ HTTP Fetcher + CSS 解析 + Adaptive 元素追踪
 - ✅ StealthyFetcher（Playwright）
 - ✅ AccountManager 轮换 + 锁定 + 代理 + API
-- ✅ XClient 搜索 + User Timeline（富解析 + 代理）
+- ✅ XClient 搜索 + User Timeline（富解析 + 代理 + 用户 ID 解析）
+- ✅ 额外端点骨架：回复、点赞
 - ✅ Spider 并发爬取 + 中间件 + 错误处理
 - ✅ Markdown 导出
 - ✅ Docker Compose + 完整管理 API
