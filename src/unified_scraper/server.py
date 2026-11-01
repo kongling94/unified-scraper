@@ -58,6 +58,10 @@ class Handler(BaseHTTPRequestHandler):
             title = data.get("title", "Research Report")
             dedupe = data.get("dedupe", True)
             structured = data.get("structured", False)
+            custom_sections = data.get("custom_sections")  # dict
+            auto_save = data.get("auto_save", False)
+            output_dir = data.get("output_dir", "/app/reports")
+
             items = []
             spider_map = {
                 "techcrunch": TechCrunchSpider,
@@ -81,35 +85,38 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception:
                     continue
 
-            report = generate_report(
+            result = generate_report(
                 items,
                 title=title,
                 format=fmt,
                 dedupe=dedupe,
                 structured=structured,
+                custom_sections=custom_sections,
+                auto_save=auto_save,
+                output_dir=output_dir,
             )
 
-            if fmt == "png":
-                # Return base64 so it can be used in JSON
-                b64 = base64.b64encode(report).decode("ascii")
-                self._json(200, {
-                    "status": "success",
-                    "count": len(items),
-                    "format": "png",
-                    "deduped": dedupe,
-                    "structured": structured,
-                    "png_base64": b64,
-                    "note": "Decode base64 to get PNG bytes",
-                })
+            resp = {
+                "status": "success",
+                "count": len(items),
+                "format": fmt,
+                "deduped": dedupe,
+                "structured": structured,
+            }
+
+            if isinstance(result, dict) and "saved_path" in result:
+                resp["saved_path"] = result["saved_path"]
+                content = result["content"]
             else:
-                self._json(200, {
-                    "status": "success",
-                    "count": len(items),
-                    "format": fmt,
-                    "deduped": dedupe,
-                    "structured": structured,
-                    "report": report,
-                })
+                content = result
+
+            if fmt == "png":
+                resp["png_base64"] = base64.b64encode(content).decode("ascii")
+                resp["note"] = "Decode base64 to get PNG bytes"
+            else:
+                resp["report"] = content
+
+            self._json(200, resp)
 
         elif self.path == "/accounts/add":
             username = data.get("username")
@@ -151,7 +158,7 @@ class Handler(BaseHTTPRequestHandler):
 def run(port=8080):
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Management server running on http://0.0.0.0:{port}")
-    print("Endpoints: /health /status /accounts /search /report (supports png) ...")
+    print("Endpoints: /health /status /accounts /search /report (auto_save + custom_sections) ...")
     server.serve_forever()
 
 if __name__ == "__main__":
