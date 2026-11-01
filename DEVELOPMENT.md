@@ -4,10 +4,10 @@
 - [x] Repo structure
 - [x] AccountManager basic + rotation & locking
 - [x] HTTP Fetcher real implementation + CSS parsing
-- [ ] StealthyFetcher Playwright integration
+- [x] StealthyFetcher Playwright integration
 
 ## Phase 2: X Core (Day 4-7)
-- [x] XClient GraphQL search skeleton with account headers
+- [x] XClient GraphQL search skeleton with account headers + features
 - [x] Account rotation on rate limit (lock mechanism)
 - [ ] User timeline (full GraphQL)
 
