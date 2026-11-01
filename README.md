@@ -42,30 +42,30 @@ python examples/html_report_example.py
 | `text` | 纯文本 |
 
 支持固定章节结构（`structured=True`）：
-- **热点摘要**（AI / 科技）
+- **热点摘要**（AI / 科技 / 视频）
 - **待关注**（金融）
 - **已结论**
 - **其他**
 
-```python
-from unified_scraper.utils import generate_report
-
-# 结构化 HTML
-html = generate_report(results, title="每日快照", format="html", structured=True)
-
-# PNG 长图
-png = generate_report(results, title="每日快照", format="png")
-with open("report.png", "wb") as f:
-    f.write(png)
-```
-
 ## DeepSeek Harness 接口
+
+```bash
+# HTML 结构化报告
+curl -X POST http://localhost:8080/report \
+  -H "Content-Type: application/json" \
+  -d '{"sources":["techcrunch","arxiv","cointelegraph"],"format":"html","structured":true,"dedupe":true}'
+
+# PNG 长图（返回 base64）
+curl -X POST http://localhost:8080/report \
+  -H "Content-Type: application/json" \
+  -d '{"sources":["techcrunch","hn"],"format":"png","title":"每日快照"}'
+```
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/health` | 健康检查 |
 | POST | `/search` | X 搜索 |
-| POST | `/report` | 生成报告（markdown/html/json/text + dedupe） |
+| POST | `/report` | 生成报告（支持 markdown/html/png/json/text + structured + dedupe） |
 | POST | `/accounts/add` | 添加账号 |
 
 ## 当前功能
@@ -73,8 +73,7 @@ with open("report.png", "wb") as f:
 - ✅ 多源研究 Spider
 - ✅ 报告自动去重
 - ✅ HTML 卡片式报告 + 固定章节结构
-- ✅ PNG 长图导出
-- ✅ Harness `/report`
+- ✅ PNG 长图导出（本地 + Harness base64）
 - ✅ 统一数据模型 + X 爬取 + Docker
 
 详细进度见 `DEVELOPMENT.md`。
