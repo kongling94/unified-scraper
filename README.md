@@ -39,6 +39,7 @@ curl -X POST http://localhost:8080/search \
 pip install -e .
 python examples/basic_usage.py
 python examples/spider_example.py
+python examples/user_timeline_example.py
 python -m pytest tests/ -q
 ```
 
@@ -47,8 +48,8 @@ python -m pytest tests/ -q
 - ✅ HTTP Fetcher + CSS 解析
 - ✅ StealthyFetcher（Playwright）
 - ✅ AccountManager 轮换 + 锁定 + API
-- ✅ XClient 真实 GraphQL 请求（需更新 query ID）
-- ✅ Spider 并发爬取框架
+- ✅ XClient 搜索 + User Timeline GraphQL
+- ✅ Spider 并发爬取 + 中间件 + 错误处理
 - ✅ Docker Compose + 完整管理 API
 - ✅ 基础单元测试
 
