@@ -15,6 +15,7 @@ docker compose up -d --build
 ## 研究数据采集
 
 ```bash
+python examples/deduped_report_example.py
 python examples/full_research_pipeline.py
 ```
 
@@ -22,30 +23,31 @@ python examples/full_research_pipeline.py
 
 **科技 / AI**
 - TechCrunch, The Verge, Ars Technica, Wired, VentureBeat, Hacker News
+- arXiv (cs.AI / cs.LG), Papers with Code, GitHub Trending, MIT Technology Review
 
 **金融**
-- CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha
+- CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha, CoinTelegraph
 
 **社区**
 - Reddit（r/MachineLearning、r/artificial 等）
 
 **视频**
-- YouTube 搜索（标题、视频 ID、播放量、发布时间）
-- Bilibili 热门
+- YouTube 搜索、Bilibili 热门
 
-统一输出为 `Article` / `Video` 结构。
+## 爬虫报告（支持去重）
 
-## 爬虫报告展示形式
+默认会按标题去重（可关闭）。
 
-- **Markdown**（默认）
-- **JSON**
-- **Text**
-
-Harness 可直接调用：
 ```bash
 curl -X POST http://localhost:8080/report \
   -H "Content-Type: application/json" \
-  -d '{"sources":["techcrunch","hn","coindesk"],"format":"markdown","title":"Daily Snapshot"}'
+  -d '{"sources":["techcrunch","arxiv","github","cointelegraph"],"format":"markdown","dedupe":true,"title":"Daily Snapshot"}'
+```
+
+Python：
+```python
+from unified_scraper.utils import generate_report
+report = generate_report(results, title="Snapshot", format="markdown", dedupe=True)
 ```
 
 ## DeepSeek Harness 接口
@@ -54,25 +56,15 @@ curl -X POST http://localhost:8080/report \
 |------|------|------|
 | GET | `/health` | 健康检查 |
 | GET | `/status` | 服务状态 |
-| GET | `/accounts` | 查看账号列表 |
 | POST | `/search` | X 搜索 |
-| POST | `/report` | 生成多源研究报告 |
-| POST | `/accounts/add` | 添加账号（支持 proxy） |
-
-## 当地开发
-
-```bash
-pip install -e .
-python examples/full_research_pipeline.py
-```
+| POST | `/report` | 生成去重研究报告 |
+| POST | `/accounts/add` | 添加账号 |
 
 ## 当前功能
 
-- ✅ 通用 Fetcher + Adaptive 解析
-- ✅ 多源研究 Spider（科技 / AI / 金融 / Reddit / YouTube / Bilibili）
-- ✅ 统一数据模型（Article / Video）
-- ✅ X 爬取 + 账号管理 + 代理
-- ✅ 报告生成（Markdown / JSON / Text）+ Harness `/report`
-- ✅ Docker Compose + 管理 API
+- ✅ 多源研究 Spider（含 arXiv、GitHub Trending、CoinTelegraph 等）
+- ✅ 报告自动去重（标题相似度）
+- ✅ Harness `/report` 支持 `dedupe` 参数
+- ✅ 统一数据模型 + X 爬取 + Docker
 
 详细进度见 `DEVELOPMENT.md`。
