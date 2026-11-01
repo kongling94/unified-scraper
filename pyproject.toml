@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unified-scraper"
+version = "0.1.0"
+description = "Unified web scraping framework combining Scrapling and twscrape capabilities"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx",
+    "curl-cffi",
+    "playwright",
+    "lxml",
+    "selectolax",
+]
+
+[project.optional-dependencies]
+all = ["playwright", "curl-cffi"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
