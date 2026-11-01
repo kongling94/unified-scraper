@@ -6,11 +6,11 @@ import json
 from ..accounts import AccountManager, Account
 
 class XClient:
-    """X scraping client with account rotation."""
+    """X scraping client with account rotation and proxy support."""
 
     # Note: Query IDs change frequently. Update from twscrape when needed.
     SEARCH_QUERY_ID = "nK1dw4oV3k4w5T8tJ2"
-    USER_TWEETS_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"  # example, replace with latest
+    USER_TWEETS_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"
 
     def __init__(self, account_manager: AccountManager):
         self.accounts = account_manager
@@ -27,34 +27,55 @@ class XClient:
             "content-type": "application/json",
         }
 
+    def _client(self, account: Account) -> httpx.AsyncClient:
+        proxies = account.proxy if account.proxy else None
+        return httpx.AsyncClient(
+            headers=self._headers(account),
+            timeout=30.0,
+            proxies=proxies,
+            follow_redirects=True,
+        )
+
     def _parse_tweets(self, data: dict, account: Account) -> List[Dict[str, Any]]:
         tweets = []
         try:
-            # Try common timeline paths
-            timeline = (
-                data.get("data", {}).get("user", {}).get("result", {}).get("timeline", {})
-                or data.get("data", {}).get("search_by_raw_query", {}).get("search_timeline", {}).get("timeline", {})
-            )
+            # Multiple possible timeline paths
+            candidates = [
+                data.get("data", {}).get("search_by_raw_query", {}).get("search_timeline", {}).get("timeline", {}),
+                data.get("data", {}).get("user", {}).get("result", {}).get("timeline", {}),
+                data.get("data", {}).get("user", {}).get("result", {}).get("timeline_v2", {}).get("timeline", {}),
+            ]
+            timeline = next((c for c in candidates if c), {})
             instructions = timeline.get("instructions", [])
+
             for inst in instructions:
-                for entry in inst.get("entries", []):
-                    content = entry.get("content", {})
-                    item = content.get("itemContent", {})
+                entries = inst.get("entries") or inst.get("moduleItems") or []
+                for entry in entries:
+                    content = entry.get("content", {}) or entry.get("item", {}).get("itemContent", {})
+                    item = content.get("itemContent", {}) or content
                     tweet_results = item.get("tweet_results", {}).get("result", {})
                     if not tweet_results:
                         continue
+                    # Handle TweetWithVisibilityResults wrapper
+                    if "tweet" in tweet_results:
+                        tweet_results = tweet_results["tweet"]
                     legacy = tweet_results.get("legacy", {})
-                    user_legacy = (
-                        tweet_results.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {})
-                        or {}
+                    user_result = (
+                        tweet_results.get("core", {}).get("user_results", {}).get("result", {})
+                        or tweet_results.get("user", {}).get("result", {})
                     )
+                    user_legacy = user_result.get("legacy", {}) if user_result else {}
                     tweets.append({
                         "id": legacy.get("id_str"),
-                        "text": legacy.get("full_text"),
+                        "text": legacy.get("full_text") or legacy.get("text"),
                         "user": user_legacy.get("screen_name"),
+                        "user_name": user_legacy.get("name"),
                         "created_at": legacy.get("created_at"),
                         "favorite_count": legacy.get("favorite_count"),
                         "retweet_count": legacy.get("retweet_count"),
+                        "reply_count": legacy.get("reply_count"),
+                        "quote_count": legacy.get("quote_count"),
+                        "lang": legacy.get("lang"),
                     })
         except Exception:
             pass
@@ -98,7 +119,7 @@ class XClient:
             "features": json.dumps(features),
         }
 
-        async with httpx.AsyncClient(headers=self._headers(account), timeout=30.0) as client:
+        async with self._client(account) as client:
             try:
                 resp = await client.get(url, params=params)
                 if resp.status_code == 200:
@@ -117,7 +138,7 @@ class XClient:
             raise RuntimeError("No available accounts")
 
         variables = {
-            "userId": "",  # would need user ID lookup first in full impl
+            "userId": "",
             "count": min(limit, 20),
             "includePromotedContent": False,
             "withVoice": True,
@@ -149,7 +170,7 @@ class XClient:
             "features": json.dumps(features),
         }
 
-        async with httpx.AsyncClient(headers=self._headers(account), timeout=30.0) as client:
+        async with self._client(account) as client:
             try:
                 resp = await client.get(url, params=params)
                 if resp.status_code == 200:
