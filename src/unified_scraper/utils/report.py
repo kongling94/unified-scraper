@@ -1,15 +1,17 @@
 """Report generation for crawler results.
 
 Supports markdown, json, text, html, and png.
-Inspired by wechat-group-report card layout.
+Features: dedupe, structured sections, custom sections, auto-save.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
+from pathlib import Path
 from .markdown import to_markdown
 import re
 import html
 import io
+import os
 
 def _normalize(text: Optional[str]) -> str:
     if not text:
@@ -47,8 +49,8 @@ def deduplicate(
             unique.append(item)
     return unique
 
-def _structured_sections(results: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    """Group into fixed research-friendly sections with improved rules."""
+def _default_structured_sections(results: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    """Default fixed sections."""
     sections = {
         "热点摘要": [],
         "待关注": [],
@@ -64,13 +66,43 @@ def _structured_sections(results: List[Dict[str, Any]]) -> Dict[str, List[Dict[s
         src = (item.get("source") or "").lower()
         text = f"{cat} {src}"
 
-        if any(k in text for k in ai_tech_keys):
+        if any(k in text for k in ai_tech_keys) or any(k in text for k in video_keys):
             sections["热点摘要"].append(item)
         elif any(k in text for k in finance_keys):
             sections["待关注"].append(item)
-        elif any(k in text for k in video_keys):
-            sections["热点摘要"].append(item)  # video trends also hot
         else:
+            sections["其他"].append(item)
+
+    return {k: v for k, v in sections.items() if v}
+
+def apply_custom_sections(
+    results: List[Dict[str, Any]],
+    section_rules: Dict[str, List[str]],
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Group items by custom section rules.
+
+    section_rules example:
+    {
+      "AI 热点": ["ai", "arxiv", "github"],
+      "金融动态": ["finance", "coin", "reuters"],
+      "视频趋势": ["youtube", "bilibili"]
+    }
+    An item is placed in the first matching section; unmatched go to "其他".
+    """
+    sections: Dict[str, List] = {name: [] for name in section_rules}
+    sections["其他"] = []
+
+    for item in results:
+        cat = (item.get("category") or "").lower()
+        src = (item.get("source") or "").lower()
+        text = f"{cat} {src}"
+        placed = False
+        for sec_name, keywords in section_rules.items():
+            if any(k.lower() in text for k in keywords):
+                sections[sec_name].append(item)
+                placed = True
+                break
+        if not placed:
             sections["其他"].append(item)
 
     return {k: v for k, v in sections.items() if v}
@@ -83,20 +115,18 @@ def _render_html(
     title: str,
     timestamp: str,
     dedupe: bool,
-    structured: bool = False,
+    groups: Optional[Dict[str, List]] = None,
 ) -> str:
-    if structured:
-        groups = _structured_sections(results)
-    else:
+    if groups is None:
         groups = {}
         for item in results:
             cat = item.get("category") or item.get("source") or "other"
             groups.setdefault(cat, []).append(item)
 
     cards_html = []
-    colors = {"热点摘要": "#fff", "待关注": "#fff8e6", "已结论": "#f0fff4", "其他": "#fff"}
+    default_colors = {"热点摘要": "#fff", "待关注": "#fff8e6", "已结论": "#f0fff4", "其他": "#fff"}
     for cat, items in groups.items():
-        bg = colors.get(cat, "#fff")
+        bg = default_colors.get(cat, "#fff")
         cards = []
         for item in items:
             t = _html_escape(item.get("title", "Untitled"))
@@ -148,7 +178,6 @@ def _render_html(
 </html>'''
 
 def _render_png(results: List[Dict[str, Any]], title: str, timestamp: str) -> bytes:
-    """Render a simple long PNG using Pillow. Returns PNG bytes."""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -157,7 +186,6 @@ def _render_png(results: List[Dict[str, Any]], title: str, timestamp: str) -> by
     width = 800
     padding = 24
     card_pad = 12
-
     height = 120 + len(results[:50]) * 70
     height = max(height, 400)
 
@@ -192,6 +220,21 @@ def _render_png(results: List[Dict[str, Any]], title: str, timestamp: str) -> by
     img.save(buf, format="PNG")
     return buf.getvalue()
 
+def _auto_save(content: Union[str, bytes], title: str, fmt: str, output_dir: str = "reports") -> str:
+    """Save report to disk and return the file path."""
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    safe_title = re.sub(r"[^\w\u4e00-\u9fff-]", "_", title)[:40]
+    ext = {"html": "html", "markdown": "md", "json": "json", "text": "txt", "png": "png"}.get(fmt, "txt")
+    filename = f"{ts}_{safe_title}.{ext}"
+    path = os.path.join(output_dir, filename)
+
+    mode = "wb" if isinstance(content, bytes) else "w"
+    encoding = None if isinstance(content, bytes) else "utf-8"
+    with open(path, mode, encoding=encoding) as f:
+        f.write(content)
+    return path
+
 def generate_report(
     results: List[Dict[str, Any]],
     title: str = "Crawler Report",
@@ -199,36 +242,41 @@ def generate_report(
     dedupe: bool = True,
     dedupe_key: str = "title",
     structured: bool = False,
-) -> str | bytes:
+    custom_sections: Optional[Dict[str, List[str]]] = None,
+    auto_save: bool = False,
+    output_dir: str = "reports",
+) -> Union[str, bytes, Dict[str, Any]]:
     """Generate a report from crawler results.
 
     Supported formats: markdown, json, text, html, png
-    structured=True uses fixed sections: 热点摘要 / 待关注 / 已结论
-    PNG returns bytes; others return str.
+    custom_sections: dict of section_name -> list of keywords
+    auto_save: if True, also write to disk and return dict with path
     """
     if dedupe:
         results = deduplicate(results, key=dedupe_key)
 
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
+    groups = None
+    if custom_sections:
+        groups = apply_custom_sections(results, custom_sections)
+    elif structured:
+        groups = _default_structured_sections(results)
+
     if format == "png":
-        return _render_png(results, title, timestamp)
-
-    if format == "html":
-        return _render_html(results, title, timestamp, dedupe, structured=structured)
-
-    if format == "json":
+        content = _render_png(results, title, timestamp)
+    elif format == "html":
+        content = _render_html(results, title, timestamp, dedupe, groups=groups)
+    elif format == "json":
         import json
-        return json.dumps({
+        content = json.dumps({
             "title": title,
             "generated": timestamp,
             "count": len(results),
             "deduped": dedupe,
-            "structured": structured,
             "items": results,
         }, ensure_ascii=False, indent=2)
-
-    if format == "text":
+    elif format == "text":
         header = f"{title}\nGenerated: {timestamp}\nItems: {len(results)}\n"
         lines = [header, "=" * 40]
         for i, item in enumerate(results, 1):
@@ -236,16 +284,21 @@ def generate_report(
             for k, v in item.items():
                 if v is not None:
                     lines.append(f"  {k}: {v}")
-        return "\n".join(lines)
-
-    # default markdown
-    md = f"# {title}\n\n**Generated**: {timestamp}  \n**Items**: {len(results)}  \n**Deduped**: {dedupe}\n\n"
-    if structured:
-        sections = _structured_sections(results)
-        for sec, items in sections.items():
-            md += f"## {sec}\n\n"
-            md += to_markdown(items, title="")
-            md += "\n"
+        content = "\n".join(lines)
     else:
-        md += to_markdown(results, title="Details")
-    return md
+        # markdown
+        md = f"# {title}\n\n**Generated**: {timestamp}  \n**Items**: {len(results)}  \n**Deduped**: {dedupe}\n\n"
+        if groups:
+            for sec, items in groups.items():
+                md += f"## {sec}\n\n"
+                md += to_markdown(items, title="")
+                md += "\n"
+        else:
+            md += to_markdown(results, title="Details")
+        content = md
+
+    if auto_save:
+        path = _auto_save(content, title, format, output_dir)
+        return {"content": content, "saved_path": path, "format": format}
+
+    return content
