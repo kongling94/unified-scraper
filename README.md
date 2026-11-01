@@ -15,49 +15,48 @@ docker compose up -d --build
 ## 研究数据采集
 
 ```bash
+python examples/png_and_structured_example.py
 python examples/html_report_example.py
-python examples/deduped_report_example.py
-python examples/full_research_pipeline.py
 ```
 
 ### 当前内置 Spider
 
-**科技 / AI**
-- TechCrunch, The Verge, Ars Technica, Wired, VentureBeat, Hacker News
-- arXiv, Papers with Code, GitHub Trending, MIT Technology Review
+**科技 / AI**：TechCrunch, The Verge, Ars Technica, Wired, VentureBeat, Hacker News, arXiv, Papers with Code, GitHub Trending, MIT Technology Review
 
-**金融**
-- CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha, CoinTelegraph
+**金融**：CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha, CoinTelegraph
 
-**社区**
-- Reddit
+**社区**：Reddit
 
-**视频**
-- YouTube、Bilibili
+**视频**：YouTube、Bilibili
 
 ## 爬虫报告呈现形式
 
-支持四种格式（默认去重）：
+支持五种格式（默认去重）：
 
 | 格式 | 说明 |
 |------|------|
 | `markdown` | 默认，便于编辑与存档 |
 | `html` | 卡片式网页，可直接浏览器打开分享 |
-| `json` | 结构化，供程序消费 |
-| `text` | 纯文本摘要 |
+| `png` | 长图，适合微信/社媒转发（需 `pip install pillow`） |
+| `json` | 结构化 |
+| `text` | 纯文本 |
 
-HTML 报告按分类卡片排版，带原文链接，风格借鉴微信群总结报告。
+支持固定章节结构（`structured=True`）：
+- **热点摘要**（AI / 科技）
+- **待关注**（金融）
+- **已结论**
+- **其他**
 
 ```python
 from unified_scraper.utils import generate_report
-html = generate_report(results, title="每日快照", format="html", dedupe=True)
-```
 
-Harness：
-```bash
-curl -X POST http://localhost:8080/report \
-  -H "Content-Type: application/json" \
-  -d '{"sources":["techcrunch","arxiv"],"format":"html","dedupe":true}'
+# 结构化 HTML
+html = generate_report(results, title="每日快照", format="html", structured=True)
+
+# PNG 长图
+png = generate_report(results, title="每日快照", format="png")
+with open("report.png", "wb") as f:
+    f.write(png)
 ```
 
 ## DeepSeek Harness 接口
@@ -66,15 +65,16 @@ curl -X POST http://localhost:8080/report \
 |------|------|------|
 | GET | `/health` | 健康检查 |
 | POST | `/search` | X 搜索 |
-| POST | `/report` | 生成报告（支持 markdown/html/json/text + dedupe） |
+| POST | `/report` | 生成报告（markdown/html/json/text + dedupe） |
 | POST | `/accounts/add` | 添加账号 |
 
 ## 当前功能
 
 - ✅ 多源研究 Spider
 - ✅ 报告自动去重
-- ✅ HTML 卡片式报告（可分享）
-- ✅ Harness `/report` 支持多格式
+- ✅ HTML 卡片式报告 + 固定章节结构
+- ✅ PNG 长图导出
+- ✅ Harness `/report`
 - ✅ 统一数据模型 + X 爬取 + Docker
 
 详细进度见 `DEVELOPMENT.md`。
