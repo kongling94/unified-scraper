@@ -8,24 +8,29 @@
 docker compose up -d --build
 ```
 
-服务启动后：
-- 管理接口：`http://localhost:8080`
-- 健康检查：`GET /health`
-- 状态：`GET /status`
-- 搜索接口：`POST /search` （JSON: `{"query": "AI"}`）
+服务启动后：`http://localhost:8080`
 
-## DeepSeek Harness 管理
+## DeepSeek Harness 接口
 
-部署后可通过 DeepSeek Harness 调用以下接口进行管理操作：
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| GET | `/status` | 服务状态 |
+| GET | `/accounts` | 查看账号列表 |
+| POST | `/search` | X 搜索 `{"query":"AI","limit":10}` |
+| POST | `/accounts/add` | 添加账号 `{"username":"","auth_token":"","ct0":""}` |
+| POST | `/accounts/lock` | 锁定账号 |
+| POST | `/accounts/unlock` | 解锁账号 |
 
-- `GET /health` — 检查服务状态
-- `GET /status` — 查看当前能力
-- `POST /search` — 触发 X 搜索（需配置账号）
-
-示例（Harness 内可直接调用）：
+示例：
 ```bash
 curl http://localhost:8080/health
-curl -X POST http://localhost:8080/search -H "Content-Type: application/json" -d '{"query":"AI"}'
+curl -X POST http://localhost:8080/accounts/add \
+  -H "Content-Type: application/json" \
+  -d '{"username":"u1","auth_token":"xxx","ct0":"yyy"}'
+curl -X POST http://localhost:8080/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"AI"}'
 ```
 
 ## 当地开发
@@ -33,14 +38,18 @@ curl -X POST http://localhost:8080/search -H "Content-Type: application/json" -d
 ```bash
 pip install -e .
 python examples/basic_usage.py
+python examples/spider_example.py
+python -m pytest tests/ -q
 ```
 
 ## 当前功能
 
 - ✅ HTTP Fetcher + CSS 解析
 - ✅ StealthyFetcher（Playwright）
-- ✅ AccountManager 轮换 + 锁定
-- ✅ XClient GraphQL 结构
-- ✅ Docker Compose 部署 + 管理接口
+- ✅ AccountManager 轮换 + 锁定 + API
+- ✅ XClient 真实 GraphQL 请求（需更新 query ID）
+- ✅ Spider 并发爬取框架
+- ✅ Docker Compose + 完整管理 API
+- ✅ 基础单元测试
 
 详细进度见 `DEVELOPMENT.md`。
