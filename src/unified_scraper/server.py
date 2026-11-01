@@ -3,6 +3,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import asyncio
+import base64
 from .accounts import AccountManager
 from .x import XClient
 from .utils import generate_report
@@ -56,6 +57,7 @@ class Handler(BaseHTTPRequestHandler):
             fmt = data.get("format", "markdown")
             title = data.get("title", "Research Report")
             dedupe = data.get("dedupe", True)
+            structured = data.get("structured", False)
             items = []
             spider_map = {
                 "techcrunch": TechCrunchSpider,
@@ -78,14 +80,36 @@ class Handler(BaseHTTPRequestHandler):
                     items.extend(spider.start())
                 except Exception:
                     continue
-            report = generate_report(items, title=title, format=fmt, dedupe=dedupe)
-            self._json(200, {
-                "status": "success",
-                "count": len(items),
-                "format": fmt,
-                "deduped": dedupe,
-                "report": report,
-            })
+
+            report = generate_report(
+                items,
+                title=title,
+                format=fmt,
+                dedupe=dedupe,
+                structured=structured,
+            )
+
+            if fmt == "png":
+                # Return base64 so it can be used in JSON
+                b64 = base64.b64encode(report).decode("ascii")
+                self._json(200, {
+                    "status": "success",
+                    "count": len(items),
+                    "format": "png",
+                    "deduped": dedupe,
+                    "structured": structured,
+                    "png_base64": b64,
+                    "note": "Decode base64 to get PNG bytes",
+                })
+            else:
+                self._json(200, {
+                    "status": "success",
+                    "count": len(items),
+                    "format": fmt,
+                    "deduped": dedupe,
+                    "structured": structured,
+                    "report": report,
+                })
 
         elif self.path == "/accounts/add":
             username = data.get("username")
@@ -127,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
 def run(port=8080):
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Management server running on http://0.0.0.0:{port}")
-    print("Endpoints: /health /status /accounts /search /report /accounts/add ...")
+    print("Endpoints: /health /status /accounts /search /report (supports png) ...")
     server.serve_forever()
 
 if __name__ == "__main__":
