@@ -9,6 +9,7 @@ from .utils import generate_report
 from .spiders import (
     TechCrunchSpider, TheVergeSpider, HackerNewsSpider,
     CoinDeskSpider, RedditSpider, YouTubeSearchSpider,
+    ArxivSpider, GitHubTrendingSpider, CoinTelegraphSpider, MITTechReviewSpider,
 )
 
 account_manager = AccountManager("/app/accounts.db")
@@ -51,15 +52,20 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"error": str(e), "query": query})
 
         elif self.path == "/report":
-            sources = data.get("sources", ["techcrunch", "hn"])
+            sources = data.get("sources", ["techcrunch", "hn", "arxiv"])
             fmt = data.get("format", "markdown")
             title = data.get("title", "Research Report")
+            dedupe = data.get("dedupe", True)
             items = []
             spider_map = {
                 "techcrunch": TechCrunchSpider,
                 "verge": TheVergeSpider,
                 "hn": HackerNewsSpider,
                 "coindesk": CoinDeskSpider,
+                "arxiv": ArxivSpider,
+                "github": GitHubTrendingSpider,
+                "cointelegraph": CoinTelegraphSpider,
+                "mit": MITTechReviewSpider,
                 "reddit_ml": lambda: RedditSpider("MachineLearning"),
                 "youtube": lambda: YouTubeSearchSpider(data.get("query", "AI"), 5),
             }
@@ -72,11 +78,12 @@ class Handler(BaseHTTPRequestHandler):
                     items.extend(spider.start())
                 except Exception:
                     continue
-            report = generate_report(items, title=title, format=fmt)
+            report = generate_report(items, title=title, format=fmt, dedupe=dedupe)
             self._json(200, {
                 "status": "success",
                 "count": len(items),
                 "format": fmt,
+                "deduped": dedupe,
                 "report": report,
             })
 
