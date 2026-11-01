@@ -21,23 +21,17 @@ python examples/full_research_pipeline.py
 ### 当前内置 Spider
 
 **科技 / AI**
-- TechCrunch
-- The Verge
-- Ars Technica
-- Wired
-- VentureBeat
-- Hacker News
+- TechCrunch, The Verge, Ars Technica, Wired, VentureBeat, Hacker News
 
 **金融**
-- CNBC
-- Reuters
-- Yahoo Finance
+- CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha
 
 **社区**
 - Reddit（r/MachineLearning、r/artificial 等）
 
 **视频**
-- YouTube 搜索（含标题、视频 ID、播放量、发布时间提取）
+- YouTube 搜索（标题、视频 ID、播放量、发布时间）
+- Bilibili 热门
 
 统一输出为 `Article` / `Video` 结构。
 
@@ -47,9 +41,11 @@ python examples/full_research_pipeline.py
 - **JSON**
 - **Text**
 
-```python
-from unified_scraper.utils import generate_report
-report = generate_report(results, title="AI & Finance News", format="markdown")
+Harness 可直接调用：
+```bash
+curl -X POST http://localhost:8080/report \
+  -H "Content-Type: application/json" \
+  -d '{"sources":["techcrunch","hn","coindesk"],"format":"markdown","title":"Daily Snapshot"}'
 ```
 
 ## DeepSeek Harness 接口
@@ -60,6 +56,7 @@ report = generate_report(results, title="AI & Finance News", format="markdown")
 | GET | `/status` | 服务状态 |
 | GET | `/accounts` | 查看账号列表 |
 | POST | `/search` | X 搜索 |
+| POST | `/report` | 生成多源研究报告 |
 | POST | `/accounts/add` | 添加账号（支持 proxy） |
 
 ## 当地开发
@@ -67,16 +64,15 @@ report = generate_report(results, title="AI & Finance News", format="markdown")
 ```bash
 pip install -e .
 python examples/full_research_pipeline.py
-python examples/report_example.py
 ```
 
 ## 当前功能
 
 - ✅ 通用 Fetcher + Adaptive 解析
-- ✅ 多源研究 Spider（科技 / AI / 金融 / Reddit / YouTube）
+- ✅ 多源研究 Spider（科技 / AI / 金融 / Reddit / YouTube / Bilibili）
 - ✅ 统一数据模型（Article / Video）
 - ✅ X 爬取 + 账号管理 + 代理
-- ✅ 报告生成（Markdown / JSON / Text）
+- ✅ 报告生成（Markdown / JSON / Text）+ Harness `/report`
 - ✅ Docker Compose + 管理 API
 
 详细进度见 `DEVELOPMENT.md`。
