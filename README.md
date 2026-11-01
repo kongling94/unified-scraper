@@ -15,8 +15,8 @@ docker compose up -d --build
 ## 研究数据采集
 
 ```bash
+python examples/custom_sections_and_save_example.py
 python examples/png_and_structured_example.py
-python examples/html_report_example.py
 ```
 
 ### 当前内置 Spider
@@ -29,51 +29,57 @@ python examples/html_report_example.py
 
 **视频**：YouTube、Bilibili
 
-## 爬虫报告呈现形式
+## 爬虫报告功能
 
-支持五种格式（默认去重）：
+- 多格式：`markdown` / `html` / `png` / `json` / `text`
+- 自动去重
+- 固定章节（`structured=true`）或**自定义章节**
+- **自动落盘**（`auto_save=true`）
 
-| 格式 | 说明 |
-|------|------|
-| `markdown` | 默认，便于编辑与存档 |
-| `html` | 卡片式网页，可直接浏览器打开分享 |
-| `png` | 长图，适合微信/社媒转发（需 `pip install pillow`） |
-| `json` | 结构化 |
-| `text` | 纯文本 |
+### 自定义章节示例
 
-支持固定章节结构（`structured=True`）：
-- **热点摘要**（AI / 科技 / 视频）
-- **待关注**（金融）
-- **已结论**
-- **其他**
-
-## DeepSeek Harness 接口
-
-```bash
-# HTML 结构化报告
-curl -X POST http://localhost:8080/report \
-  -H "Content-Type: application/json" \
-  -d '{"sources":["techcrunch","arxiv","cointelegraph"],"format":"html","structured":true,"dedupe":true}'
-
-# PNG 长图（返回 base64）
-curl -X POST http://localhost:8080/report \
-  -H "Content-Type: application/json" \
-  -d '{"sources":["techcrunch","hn"],"format":"png","title":"每日快照"}'
+```python
+custom = {
+    "AI 与技术热点": ["ai", "arxiv", "techcrunch"],
+    "金融与加密": ["coin", "finance"],
+    "视频趋势": ["youtube", "bilibili"],
+}
+result = generate_report(
+    results,
+    title="自定义快照",
+    format="html",
+    custom_sections=custom,
+    auto_save=True,
+    output_dir="reports",
+)
+print(result["saved_path"])
 ```
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
-| POST | `/search` | X 搜索 |
-| POST | `/report` | 生成报告（支持 markdown/html/png/json/text + structured + dedupe） |
-| POST | `/accounts/add` | 添加账号 |
+### Harness 调用
+
+```bash
+curl -X POST http://localhost:8080/report \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sources": ["techcrunch", "arxiv", "cointelegraph"],
+    "format": "html",
+    "custom_sections": {
+      "AI热点": ["ai", "arxiv"],
+      "金融": ["coin", "finance"]
+    },
+    "auto_save": true,
+    "dedupe": true
+  }'
+```
+
+返回中会包含 `saved_path`。
 
 ## 当前功能
 
 - ✅ 多源研究 Spider
-- ✅ 报告自动去重
-- ✅ HTML 卡片式报告 + 固定章节结构
-- ✅ PNG 长图导出（本地 + Harness base64）
-- ✅ 统一数据模型 + X 爬取 + Docker
+- ✅ 报告去重 + 自定义章节 + 自动落盘
+- ✅ HTML 卡片 / PNG 长图
+- ✅ Harness `/report` 完整支持
+- ✅ Docker Compose
 
 详细进度见 `DEVELOPMENT.md`。
