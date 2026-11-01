@@ -11,9 +11,11 @@ class XClient:
     # Note: Query IDs change frequently. Update from twscrape when needed.
     SEARCH_QUERY_ID = "nK1dw4oV3k4w5T8tJ2"
     USER_TWEETS_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"
+    USER_BY_SCREEN_NAME_QUERY_ID = "G3KGOASz96M-Qu0nwmGXNg"  # example
 
     def __init__(self, account_manager: AccountManager):
         self.accounts = account_manager
+        self._user_id_cache: Dict[str, str] = {}
 
     def _headers(self, account: Account) -> Dict[str, str]:
         return {
@@ -39,7 +41,6 @@ class XClient:
     def _parse_tweets(self, data: dict, account: Account) -> List[Dict[str, Any]]:
         tweets = []
         try:
-            # Multiple possible timeline paths
             candidates = [
                 data.get("data", {}).get("search_by_raw_query", {}).get("search_timeline", {}).get("timeline", {}),
                 data.get("data", {}).get("user", {}).get("result", {}).get("timeline", {}),
@@ -56,7 +57,6 @@ class XClient:
                     tweet_results = item.get("tweet_results", {}).get("result", {})
                     if not tweet_results:
                         continue
-                    # Handle TweetWithVisibilityResults wrapper
                     if "tweet" in tweet_results:
                         tweet_results = tweet_results["tweet"]
                     legacy = tweet_results.get("legacy", {})
@@ -80,6 +80,34 @@ class XClient:
         except Exception:
             pass
         return tweets or [{"status": "ok", "raw_keys": list(data.keys()), "account": account.username}]
+
+    async def resolve_user_id(self, username: str) -> Optional[str]:
+        """Resolve screen name to user ID."""
+        if username in self._user_id_cache:
+            return self._user_id_cache[username]
+
+        account = self.accounts.get_available()
+        if not account:
+            raise RuntimeError("No available accounts")
+
+        variables = {"screen_name": username}
+        features = {"hidden_profile_likes_enabled": True, "responsive_web_graphql_exclude_directive_enabled": True}
+        url = f"https://twitter.com/i/api/graphql/{self.USER_BY_SCREEN_NAME_QUERY_ID}/UserByScreenName"
+        params = {"variables": json.dumps(variables), "features": json.dumps(features)}
+
+        async with self._client(account) as client:
+            try:
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    user_id = data.get("data", {}).get("user", {}).get("result", {}).get("rest_id")
+                    if user_id:
+                        self._user_id_cache[username] = user_id
+                        return user_id
+                self.accounts.lock(account.username)
+            except Exception:
+                self.accounts.lock(account.username)
+        return None
 
     async def search(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Search tweets using GraphQL."""
@@ -114,10 +142,7 @@ class XClient:
         }
 
         url = f"https://twitter.com/i/api/graphql/{self.SEARCH_QUERY_ID}/SearchTimeline"
-        params = {
-            "variables": json.dumps(variables),
-            "features": json.dumps(features),
-        }
+        params = {"variables": json.dumps(variables), "features": json.dumps(features)}
 
         async with self._client(account) as client:
             try:
@@ -133,12 +158,16 @@ class XClient:
 
     async def user_tweets(self, username: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Get user timeline using GraphQL."""
+        user_id = await self.resolve_user_id(username)
+        if not user_id:
+            return [{"status": "user_not_found", "username": username}]
+
         account = self.accounts.get_available()
         if not account:
             raise RuntimeError("No available accounts")
 
         variables = {
-            "userId": "",
+            "userId": user_id,
             "count": min(limit, 20),
             "includePromotedContent": False,
             "withVoice": True,
@@ -165,10 +194,7 @@ class XClient:
         }
 
         url = f"https://twitter.com/i/api/graphql/{self.USER_TWEETS_QUERY_ID}/UserTweets"
-        params = {
-            "variables": json.dumps(variables),
-            "features": json.dumps(features),
-        }
+        params = {"variables": json.dumps(variables), "features": json.dumps(features)}
 
         async with self._client(account) as client:
             try:
@@ -177,6 +203,7 @@ class XClient:
                     tweets = self._parse_tweets(resp.json(), account)
                     for t in tweets:
                         t["requested_user"] = username
+                        t["user_id"] = user_id
                     return tweets
                 else:
                     self.accounts.lock(account.username)
@@ -184,3 +211,18 @@ class XClient:
             except Exception as e:
                 self.accounts.lock(account.username)
                 raise RuntimeError(f"User timeline failed with account {account.username}: {e}") from e
+
+    async def tweet_replies(self, tweet_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get replies to a tweet (structure ready)."""
+        account = self.accounts.get_available()
+        if not account:
+            raise RuntimeError("No available accounts")
+        return [{"status": "ready", "tweet_id": tweet_id, "account": account.username, "note": "Implement TweetDetail query ID"}]
+
+    async def user_likes(self, username: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get tweets liked by a user (structure ready)."""
+        user_id = await self.resolve_user_id(username)
+        account = self.accounts.get_available()
+        if not account:
+            raise RuntimeError("No available accounts")
+        return [{"status": "ready", "username": username, "user_id": user_id, "account": account.username, "note": "Implement Likes query ID"}]
