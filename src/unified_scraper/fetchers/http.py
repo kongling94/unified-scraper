@@ -33,6 +33,7 @@ class Response:
         self.content = resp.content
         self.url = str(resp.url)
         self._tree = None
+        self._adaptive_cache: Dict[str, List[str]] = {}
 
     @property
     def tree(self):
@@ -47,3 +48,19 @@ class Response:
     def text_content(self, selector: str) -> List[str]:
         """Extract text from elements matching the selector."""
         return [node.text(strip=True) for node in self.css(selector) if node.text(strip=True)]
+
+    def adaptive(self, key: str, selectors: List[str]) -> List[str]:
+        """Try multiple selectors in order and cache the first successful one.
+
+        Inspired by Scrapling's adaptive element tracking.
+        """
+        if key in self._adaptive_cache:
+            return self._adaptive_cache[key]
+
+        for sel in selectors:
+            texts = self.text_content(sel)
+            if texts:
+                self._adaptive_cache[key] = texts
+                return texts
+        self._adaptive_cache[key] = []
+        return []
