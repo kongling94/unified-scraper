@@ -11,6 +11,8 @@
 - [x] Account rotation on rate limit (lock mechanism)
 - [x] User timeline GraphQL implementation
 - [x] Proxy support per account
+- [x] User ID resolution (`resolve_user_id`)
+- [x] Extra endpoints skeleton (replies, likes)
 
 ## Phase 3: General Scraping (Day 8-10)
 - [x] Adaptive element tracking
@@ -31,7 +33,7 @@
 1. Can scrape quotes.toscrape.com and extract text ✅
 2. Can add X accounts and rotate them ✅
 3. XClient.search returns structured results (or clear error) ✅
-4. XClient.user_tweets available ✅
+4. XClient.user_tweets available with user ID resolution ✅
 5. Adaptive selectors + Markdown export ✅
 6. Proxy support + smoke tests ✅
 7. Supports Docker Compose deployment and Harness management ✅
