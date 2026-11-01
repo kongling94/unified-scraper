@@ -15,6 +15,13 @@ from .news import (
 )
 from .youtube import YouTubeSearchSpider
 from .more import CoinDeskSpider, SeekingAlphaSpider, BilibiliHotSpider
+from .research import (
+    ArxivSpider,
+    PapersWithCodeSpider,
+    GitHubTrendingSpider,
+    CoinTelegraphSpider,
+    MITTechReviewSpider,
+)
 
 __all__ = [
     "Spider",
@@ -32,4 +39,9 @@ __all__ = [
     "CoinDeskSpider",
     "SeekingAlphaSpider",
     "BilibiliHotSpider",
+    "ArxivSpider",
+    "PapersWithCodeSpider",
+    "GitHubTrendingSpider",
+    "CoinTelegraphSpider",
+    "MITTechReviewSpider",
 ]
