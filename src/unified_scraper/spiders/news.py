@@ -44,6 +44,63 @@ class TheVergeSpider(Spider):
                 category=self.category,
             ).to_dict()
 
+class ArsTechnicaSpider(Spider):
+    name = "arstechnica"
+    start_urls = ["https://arstechnica.com/"]
+    category = "tech"
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h2 a",
+            ".article h2 a",
+            "header h2 a",
+        ])
+        for title in titles[:15]:
+            yield Article(
+                source="Ars Technica",
+                title=title,
+                url=response.url,
+                category=self.category,
+            ).to_dict()
+
+class WiredSpider(Spider):
+    name = "wired"
+    start_urls = ["https://www.wired.com/"]
+    category = "tech"
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h2 a",
+            ".summary-item__hed",
+            "article h2",
+        ])
+        for title in titles[:15]:
+            yield Article(
+                source="Wired",
+                title=title,
+                url=response.url,
+                category=self.category,
+            ).to_dict()
+
+class VentureBeatSpider(Spider):
+    name = "venturebeat"
+    start_urls = ["https://venturebeat.com/"]
+    category = "ai"
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h2 a",
+            ".Article__title a",
+            "article h2",
+        ])
+        for title in titles[:15]:
+            yield Article(
+                source="VentureBeat",
+                title=title,
+                url=response.url,
+                category=self.category,
+            ).to_dict()
+
 class HackerNewsSpider(Spider):
     name = "hackernews"
     start_urls = ["https://news.ycombinator.com/"]
@@ -81,4 +138,65 @@ class CNBCSpider(Spider):
                 title=title,
                 url=response.url,
                 category=self.category,
+            ).to_dict()
+
+class ReutersSpider(Spider):
+    name = "reuters"
+    start_urls = ["https://www.reuters.com/"]
+    category = "finance"
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h3 a",
+            "[data-testid='Heading']",
+            "article h3",
+        ])
+        for title in titles[:15]:
+            yield Article(
+                source="Reuters",
+                title=title,
+                url=response.url,
+                category=self.category,
+            ).to_dict()
+
+class YahooFinanceSpider(Spider):
+    name = "yahoo_finance"
+    start_urls = ["https://finance.yahoo.com/"]
+    category = "finance"
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h3 a",
+            ".js-content-viewer",
+            "article h3",
+        ])
+        for title in titles[:15]:
+            yield Article(
+                source="Yahoo Finance",
+                title=title,
+                url=response.url,
+                category=self.category,
+            ).to_dict()
+
+class RedditSpider(Spider):
+    name = "reddit"
+    category = "community"
+
+    def __init__(self, subreddit: str = "MachineLearning"):
+        super().__init__()
+        self.subreddit = subreddit
+        self.start_urls = [f"https://www.reddit.com/r/{subreddit}/hot/"]
+
+    async def parse(self, response) -> AsyncGenerator[Dict[str, Any], None]:
+        titles = response.adaptive("titles", [
+            "h3",
+            "[data-testid='post-title']",
+            "a[data-click-id='body']",
+        ])
+        for title in titles[:20]:
+            yield Article(
+                source=f"Reddit r/{self.subreddit}",
+                title=title,
+                url=self.start_urls[0],
+                category="ai" if "machine" in self.subreddit.lower() or "artificial" in self.subreddit.lower() else "community",
             ).to_dict()
