@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  scraper:
+    build: .
+    container_name: unified-scraper
+    volumes:
+      - ./accounts.db:/app/accounts.db
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    command: python -m unified_scraper.server
+
+  # Optional: management interface for DeepSeek Harness
+  harness:
+    image: python:3.11-slim
+    container_name: scraper-harness
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      - scraper
+    command: tail -f /dev/null
