@@ -48,23 +48,31 @@ def deduplicate(
     return unique
 
 def _structured_sections(results: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    """Group into fixed research-friendly sections."""
+    """Group into fixed research-friendly sections with improved rules."""
     sections = {
         "热点摘要": [],
         "待关注": [],
         "已结论": [],
         "其他": [],
     }
+    ai_tech_keys = ["ai", "arxiv", "github", "tech", "mit", "verge", "wired", "ars", "venture", "hacker"]
+    finance_keys = ["finance", "coin", "reuters", "cnbc", "yahoo", "seeking", "telegraph"]
+    video_keys = ["youtube", "bilibili", "video"]
+
     for item in results:
         cat = (item.get("category") or "").lower()
         src = (item.get("source") or "").lower()
-        if any(k in cat or k in src for k in ["ai", "arxiv", "github", "tech", "mit"]):
+        text = f"{cat} {src}"
+
+        if any(k in text for k in ai_tech_keys):
             sections["热点摘要"].append(item)
-        elif any(k in cat or k in src for k in ["finance", "coin", "reuters", "cnbc", "yahoo"]):
+        elif any(k in text for k in finance_keys):
             sections["待关注"].append(item)
+        elif any(k in text for k in video_keys):
+            sections["热点摘要"].append(item)  # video trends also hot
         else:
             sections["其他"].append(item)
-    # Move high-engagement to 已结论 if present
+
     return {k: v for k, v in sections.items() if v}
 
 def _html_escape(text: Any) -> str:
@@ -148,13 +156,9 @@ def _render_png(results: List[Dict[str, Any]], title: str, timestamp: str) -> by
 
     width = 800
     padding = 24
-    line_height = 22
     card_pad = 12
 
-    # Estimate height
-    height = 120
-    for item in results[:50]:
-        height += 70
+    height = 120 + len(results[:50]) * 70
     height = max(height, 400)
 
     img = Image.new("RGB", (width, height), "#f6f7f9")
@@ -175,7 +179,6 @@ def _render_png(results: List[Dict[str, Any]], title: str, timestamp: str) -> by
     y += 40
 
     for item in results[:40]:
-        # card background
         draw.rectangle([padding, y, width - padding, y + 60], fill="#ffffff", outline="#e5e5e5")
         title_text = (item.get("title") or "")[:80]
         src = item.get("source") or ""
