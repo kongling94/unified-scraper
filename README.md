@@ -15,6 +15,7 @@ docker compose up -d --build
 ## 研究数据采集
 
 ```bash
+python examples/html_report_example.py
 python examples/deduped_report_example.py
 python examples/full_research_pipeline.py
 ```
@@ -23,31 +24,40 @@ python examples/full_research_pipeline.py
 
 **科技 / AI**
 - TechCrunch, The Verge, Ars Technica, Wired, VentureBeat, Hacker News
-- arXiv (cs.AI / cs.LG), Papers with Code, GitHub Trending, MIT Technology Review
+- arXiv, Papers with Code, GitHub Trending, MIT Technology Review
 
 **金融**
 - CNBC, Reuters, Yahoo Finance, CoinDesk, Seeking Alpha, CoinTelegraph
 
 **社区**
-- Reddit（r/MachineLearning、r/artificial 等）
+- Reddit
 
 **视频**
-- YouTube 搜索、Bilibili 热门
+- YouTube、Bilibili
 
-## 爬虫报告（支持去重）
+## 爬虫报告呈现形式
 
-默认会按标题去重（可关闭）。
+支持四种格式（默认去重）：
 
+| 格式 | 说明 |
+|------|------|
+| `markdown` | 默认，便于编辑与存档 |
+| `html` | 卡片式网页，可直接浏览器打开分享 |
+| `json` | 结构化，供程序消费 |
+| `text` | 纯文本摘要 |
+
+HTML 报告按分类卡片排版，带原文链接，风格借鉴微信群总结报告。
+
+```python
+from unified_scraper.utils import generate_report
+html = generate_report(results, title="每日快照", format="html", dedupe=True)
+```
+
+Harness：
 ```bash
 curl -X POST http://localhost:8080/report \
   -H "Content-Type: application/json" \
-  -d '{"sources":["techcrunch","arxiv","github","cointelegraph"],"format":"markdown","dedupe":true,"title":"Daily Snapshot"}'
-```
-
-Python：
-```python
-from unified_scraper.utils import generate_report
-report = generate_report(results, title="Snapshot", format="markdown", dedupe=True)
+  -d '{"sources":["techcrunch","arxiv"],"format":"html","dedupe":true}'
 ```
 
 ## DeepSeek Harness 接口
@@ -55,16 +65,16 @@ report = generate_report(results, title="Snapshot", format="markdown", dedupe=Tr
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/health` | 健康检查 |
-| GET | `/status` | 服务状态 |
 | POST | `/search` | X 搜索 |
-| POST | `/report` | 生成去重研究报告 |
+| POST | `/report` | 生成报告（支持 markdown/html/json/text + dedupe） |
 | POST | `/accounts/add` | 添加账号 |
 
 ## 当前功能
 
-- ✅ 多源研究 Spider（含 arXiv、GitHub Trending、CoinTelegraph 等）
-- ✅ 报告自动去重（标题相似度）
-- ✅ Harness `/report` 支持 `dedupe` 参数
+- ✅ 多源研究 Spider
+- ✅ 报告自动去重
+- ✅ HTML 卡片式报告（可分享）
+- ✅ Harness `/report` 支持多格式
 - ✅ 统一数据模型 + X 爬取 + Docker
 
 详细进度见 `DEVELOPMENT.md`。
