@@ -40,17 +40,19 @@ pip install -e .
 python examples/basic_usage.py
 python examples/spider_example.py
 python examples/user_timeline_example.py
+python examples/adaptive_markdown_example.py
 python -m pytest tests/ -q
 ```
 
 ## 当前功能
 
-- ✅ HTTP Fetcher + CSS 解析
+- ✅ HTTP Fetcher + CSS 解析 + Adaptive 元素追踪
 - ✅ StealthyFetcher（Playwright）
 - ✅ AccountManager 轮换 + 锁定 + API
 - ✅ XClient 搜索 + User Timeline GraphQL
 - ✅ Spider 并发爬取 + 中间件 + 错误处理
+- ✅ Markdown 导出
 - ✅ Docker Compose + 完整管理 API
-- ✅ 基础单元测试
+- ✅ 单元测试 + 集成测试
 
 详细进度见 `DEVELOPMENT.md`。
