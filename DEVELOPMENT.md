@@ -7,9 +7,10 @@
 - [x] StealthyFetcher Playwright integration
 
 ## Phase 2: X Core (Day 4-7)
-- [x] XClient real GraphQL search request + basic parsing
+- [x] XClient real GraphQL search request + richer parsing
 - [x] Account rotation on rate limit (lock mechanism)
 - [x] User timeline GraphQL implementation
+- [x] Proxy support per account
 
 ## Phase 3: General Scraping (Day 8-10)
 - [x] Adaptive element tracking
@@ -19,7 +20,7 @@
 ## Phase 4: Testing (Day 11-13)
 - [x] Unit tests for AccountManager
 - [x] Integration test for news sites + adaptive + markdown
-- [ ] X search smoke test
+- [x] X search smoke test (no-account + proxy)
 
 ## Deployment
 - [x] Dockerfile
@@ -32,4 +33,5 @@
 3. XClient.search returns structured results (or clear error) ✅
 4. XClient.user_tweets available ✅
 5. Adaptive selectors + Markdown export ✅
-6. Supports Docker Compose deployment and Harness management ✅
+6. Proxy support + smoke tests ✅
+7. Supports Docker Compose deployment and Harness management ✅
